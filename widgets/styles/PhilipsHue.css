@@ -1,0 +1,242 @@
+body {
+	margin: 0;
+	padding: 0;
+	background: transparent;
+	width: 100vw;
+	height: 100vh;
+}
+
+:root {
+	--text-color: #ffffff;
+	--accent-color: #ffff00;
+	--bg-color: rgba(0,0,0,1);
+	--widget-opacity: 0.8;
+	--tiles-opacity: 0.8;
+	--light-tiles-opacity: 0.8;
+	--tiles-zone-color: #020ef8;
+	--tiles-room-color: #020ef8;
+	--tiles-light-color: #020ef8;
+	--tiles-scene-color: #020ef8;
+}
+
+.main-widget {
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	padding: 12px;
+	color: var(--text-color);
+	background-color: color-mix(in srgb, var(--bg-color), transparent calc((1 - var(--widget-opacity)) * 100%));
+	font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.hidden {
+	display: none !important;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.title {
+	font-size: 30px;
+	font-weight: 700;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.screen {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	overflow: auto;
+}
+
+.text {
+	font-size: 18px;
+}
+
+.roomType {
+	font-size: 25px;
+}
+
+.btn {
+	background: transparent;
+	border: 1px solid color-mix(in srgb, var(--text-color), transparent 60%);
+	color: var(--text-color);
+	border-radius: 12px;
+	padding: 10px;
+	font-size: 22px;
+	cursor: pointer;
+}
+
+.list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+	gap: 10px;
+	align-content: start;
+}
+
+.room,
+.zone,
+.light,
+.scene{
+	text-align: left;
+	border: 1px solid rgba(255,255,255,0.12);
+	border-radius: 16px;
+	padding: 12px;
+	cursor: pointer;
+	color: var(--text-color);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.room {
+	min-height: 130px;
+	background-color: color-mix(in srgb, var(--tiles-room-color), transparent calc((1 - var(--tiles-opacity)) * 100%));
+}
+
+.zone{
+	min-height: 100px;
+	background-color: color-mix(in srgb, var(--tiles-zone-color), transparent calc((1 - var(--tiles-opacity)) * 100%));
+}
+
+.scene{
+	min-height: 100px;
+	background-color: color-mix(in srgb, var(--tiles-scene-color), transparent calc((1 - var(--tiles-opacity)) * 100%));
+}
+
+.light {
+	min-height: 180px;
+	background-color: color-mix(in srgb, var(--tiles-light-color), transparent calc((1 - var(--light-tiles-opacity)) * 100%));
+}
+
+.itemTitle {
+	font-size: 22px;
+	font-weight: 800;
+	line-height: 1.1;
+}
+
+.itemSub {
+	font-size: 16px;
+	opacity: 0.75;
+	margin-top: 6px;
+}
+
+.itemFooter {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.badge {
+	font-size: 15px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	border: 1px solid rgba(255,255,255,0.16);
+	opacity: 0.85;
+	white-space: nowrap;
+}
+
+.chev {
+	font-size: 30px;
+	opacity: 0.85;
+}
+
+.status {
+	margin-top: 10px;
+	font-size: 15px;
+	opacity: 0.85;
+	min-height: 14px;
+}
+
+#screenRooms {
+	overflow: auto;
+	max-height: calc(100vh - 90px);
+	padding-right: 4px;
+}
+
+.subheader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.btnSmall {
+	padding: 8px 10px;
+	border-radius: 12px;
+	font-size: 15px;
+}
+
+.roomTitle {
+	font-size: 25px;
+	font-weight: 800;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-align: right;
+	flex: 1;
+}
+
+.isFavButton {
+	border-color: var(--accent-color);
+}
+
+.tileOn {
+	border: 2px solid var(--accent-color);
+}
+
+.tileOff {
+}
+
+.powerDot {
+	width: 10px;
+	height: 10px;
+	border-radius: 999px;
+	background: rgba(255,255,255,0.2);
+}
+
+.tileOn .powerDot {
+	background: var(--accent-color);
+}
+
+.briWrap {
+	margin-top: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.briRow {
+	margin-top: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	font-size: 16px;
+	opacity: 0.85;
+}
+
+.briRange {
+	width: 100%;
+	margin-top: 20px;
+}
+
+.powerBtn {
+	background: none;
+	border: none;
+	color: var(--text-color);
+	height: 50px;
+	width: 50px;
+	font-size: 30px;
+	cursor: pointer;
+}

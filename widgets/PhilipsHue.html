@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+	<meta charset='UTF-8'>
+	<meta name='x-icue-interactive'>
+	<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+
+	<title>tr('PhilipsHue')</title>
+	<link rel='icon' type='image/svg+xml' href='images/hue.svg'>
+
+	<meta name='x-icue-property' content='bridgeIp' data-label="'Bridge IP'" data-type='textfield' data-default="'192.168.1.50'">
+	<meta name='x-icue-property' content='proxyPort' data-label="'Proxy port'" data-type='textfield' data-default="'5057'">
+
+	<meta name='x-icue-property' content='textColor' data-label="tr('Text Color')" data-type='color' data-default="'#ffffff'">
+	<meta name='x-icue-property' content='accentColor' data-label="tr('Accent Color')" data-type='color' data-default="'#ffff00'">
+	<meta name='x-icue-property' content='backgroundColor' data-label="tr('Background')" data-type='color' data-default="'#000000'">
+	<meta name='x-icue-property' content='transparency' data-label="tr('Widget Transparency')" data-type='slider' data-default='80' data-min='1' data-max='100' data-step='1'>
+	<meta name='x-icue-property' content='tilesZoneColor' data-label="tr('Zones color')" data-type='color' data-default="'#020ef8'">
+	<meta name='x-icue-property' content='tilesRoomColor' data-label="tr('Rooms color')" data-type='color' data-default="'#020ef8'">
+	<meta name='x-icue-property' content='tilesLightColor' data-label="tr('Lights color')" data-type='color' data-default="'#020ef8'">
+	<meta name='x-icue-property' content='tilesSceneColor' data-label="tr('Scenes color')" data-type='color' data-default="'#020ef8'">
+	<meta name='x-icue-property' content='tilesTransparency' data-label="tr('Tiles transparency')" data-type='slider' data-default='80' data-min='1' data-max='100' data-step='1'>
+	<meta name='x-icue-property' content='tilesLightTransparency' data-label="tr('Light tiles transparency')" data-type='slider' data-default='80' data-min='1' data-max='100' data-step='1'>
+
+	<script id='x-icue-groups' type='application/json'>
+	[
+		{
+			"title": "PhilipsHue",
+			"properties": [
+				"bridgeIp",
+				"proxyPort"
+			]
+		},
+		{
+			"title": "tr('Widget Personalization')",
+			"properties": [
+				"textColor",
+				"accentColor",
+				"backgroundColor",
+				"transparency",
+				"tilesZoneColor",
+				"tilesRoomColor",
+				"tilesLightColor",
+				"tilesSceneColor",
+				"tilesTransparency",
+				"tilesLightTransparency"
+			]
+		}
+	]
+	</script>
+
+	<link rel='stylesheet' type='text/css' href='styles/PhilipsHue.css'>
+	<script type='text/javascript' src='tools/ColorTools.js'></script>
+</head>
+
+<body>
+	<div class='main-widget' id='root'>
+		<div class='header'>
+			<div class='title' id="title">Philips Hue</div>
+		</div>
+
+		<!-- NOT PAIRED -->
+		<div class='screen' id='screenPair'>
+			<div class='text' id="notPairedText"></div>
+			<button class='btn' id='btnPair'></button>
+		</div>
+
+		<!-- ROOMS -->
+		<div class='screen hidden' id='screenRooms'>
+			<div class='roomType' id="favTitle"></div>
+			<div class='list' id='favList'></div>
+			<div class='roomType' id="roomsTitle"></div>
+			<div class='list' id='roomsList'></div>
+			<div class='roomType' id="zonesTitle"></div>
+			<div class='list' id='zonesList'></div>
+		</div>
+		
+		<!-- LIGHTS -->
+		<div class='screen hidden' id='screenLights'>
+			<div class='subheader'>
+				<button class='btn' id='btnBack'></button>
+				<button class='btn' id='btnFavorite'>-</button>
+			</div>
+			<div class='roomType' id="lightsTitle"></div>
+			<div class='list' id='lightsList'></div>
+			<div class='roomType' id="scenesTitle"></div>
+			<div class='list' id='scenesList'></div>
+		</div>
+
+		<div class='status' id='status'></div>
+	</div>
+
+	<script>
+		icueEvents = {
+			'onDataUpdated': onIcueDataUpdated,
+			'onICUEInitialized': onIcueInitialized
+		};
+
+		let languageCode = 'en';
+		let currentRoom = null;
+		let isLoading = false;
+
+		function $(id) {
+			return document.getElementById(id);
+		}
+
+		function setStatus(text) {
+			tr(text).then(msg => {
+				$('status').textContent = String(msg || '');
+			})
+		}
+
+		function showPair() {
+			$('screenPair').classList.remove('hidden');
+			$('screenRooms').classList.add('hidden');
+		}
+
+		function showRooms() {
+			$('screenPair').classList.add('hidden');
+			$('screenRooms').classList.remove('hidden');
+		}
+		
+		function updateStyles() {
+			const t = Number(transparency);
+			const tt = Number(tilesTransparency);
+			const lt = Number(tilesLightTransparency);
+			const opacity = Number.isFinite(t) ? t / 100 : 1;
+			const tilesOpacity = Number.isFinite(t) ? tt / 100 : 1;
+			const lightsOpacity = Number.isFinite(t) ? lt / 100 : 1;
+			const root = document.querySelector('.main-widget');
+			if (root) {
+				root.style.setProperty('--widget-opacity', opacity);
+				root.style.setProperty('--bg-color', backgroundColor);
+				root.style.setProperty('--text-color', textColor);
+				root.style.setProperty('--accent-color', accentColor);
+				root.style.setProperty('--tiles-zone-color', tilesZoneColor);
+				root.style.setProperty('--tiles-room-color', tilesRoomColor);
+				root.style.setProperty('--tiles-light-color', tilesLightColor);
+				root.style.setProperty('--tiles-scene-color', tilesSceneColor);
+				root.style.setProperty('--tiles-opacity', tilesOpacity);
+				root.style.setProperty('--light-tiles-opacity', lightsOpacity);
+			}
+		}
+
+		function getBridgeIp() {
+			return String(bridgeIp || '').trim();
+		}
+
+		async function apiRequest(method, path) {
+			return new Promise(function(resolve) {
+				const ip = getBridgeIp();
+				if (!ip) {
+					resolve({ ok: false, error: 'bridge_ip_missing' });
+					return;
+				}
+
+				const url = 'http://127.0.0.1:' + proxyPort + path + '?bridgeIp=' + encodeURIComponent(ip);
+				const xhr = new XMLHttpRequest();
+				xhr.open(method, url, true);
+				xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4) {
+						try {
+							resolve(JSON.parse(xhr.responseText));
+						} catch (e) {
+							resolve({ ok: false, error: 'parse_error', raw: xhr.responseText });
+						}
+					}
+				};
+
+				xhr.onerror = function() {
+					resolve({ ok: false, error: 'network_error' });
+				};
+
+				xhr.send(null);
+			});
+		}
+
+		async function ensurePairedAndLoad(retryCount = 0) {
+			setStatus('Checking IP');
+
+			const ip = getBridgeIp();
+			if (!ip) {
+				setStatus('Waiting bridge IP');
+
+				if (retryCount < 10) {
+					setTimeout(function() {
+						ensurePairedAndLoad(retryCount + 1);
+					}, 250);
+				} else {
+					showPair();
+					setStatus('Bridge IP missing');
+					return;
+				}
+			}
+
+			setStatus('Checking pairing');
+
+			const pairedRes = await apiRequest('POST', '/ensurePaired');
+			if (!pairedRes || !pairedRes.ok) {
+				showPair();
+				setStatus('Cannot connect');
+				return;
+			}
+
+			showRooms();
+			await loadRooms();
+		}
+		
+		function briToPct(bri) {
+			if (!Number.isFinite(bri)) return 0;
+			return Math.round((bri / 254) * 100);
+		}
+
+		function pctToBri(pct) {
+			const p = Math.max(1, Math.min(100, Number(pct)));
+			return Math.max(1, Math.min(254, Math.round((p / 100) * 254)));
+		}
+
+		async function loadRooms() {
+			setStatus('Loading data...');
+			$('roomsList').innerHTML = '';
+
+			const roomsRes = await apiRequest('GET', '/rooms');
+			if (!roomsRes || !roomsRes.ok) {
+				showPair();
+				setStatus('Rooms load failed');
+				return;
+			}
+
+			const roomsData = Array.isArray(roomsRes.rooms) ? roomsRes.rooms : [];
+			if (roomsData.length === 0) {
+				setStatus('No rooms or zones found');
+				return;
+			}
+			renderRooms(roomsData);
+			setStatus('');
+		}
+
+		function renderRooms(data) {
+			const favoritesRoot = $('favList');
+			favoritesRoot.innerHTML = '';
+
+			const roomsRoot = $('roomsList');
+			roomsRoot.innerHTML = '';
+
+			const zonesRoot = $('zonesList');
+			zonesRoot.innerHTML = '';
+
+			for (let i = 0; i < data.length; i++) {
+				const r = data[i];
+
+				const roomName = escapeHtml(r.name || 'Room');
+				const roomType = escapeHtml(r.type || 'Room');
+				const pct = Number.isFinite(r.briPct) ? r.briPct : 100;
+				const anyOn = r.anyOn || false;
+				const isFav = r.favorite || false;
+				
+				const btn = document.createElement('button');
+				btn.className = roomType.toLowerCase()
+				
+				if (anyOn) {
+					btn.classList.add('tileOn');
+				}
+				
+				btn.type = 'button';
+
+				btn.innerHTML = `
+				<div>
+					<div class='itemTitle'>${roomName}</div>
+					<div class='itemSub'>${roomType}</div>
+				</div>
+				<input
+					class='briRange'
+					type='range'
+					min='1'
+					max='100'
+					step='1'
+					value='${pct}'
+					data-room-bri-id='${escapeHtml(r.id)}'
+				/>
+				<div class='itemFooter'>
+					<button
+						type='button'
+						class='powerBtn'
+						data-room-id-toggle='${escapeHtml(r.id)}'
+						data-room-toggle-state='${anyOn ? 'off' : 'on'}'
+						title='Toggle'
+					>⏻</button>
+				</div>
+				`;
+
+				btn.setAttribute('data-room-id', String(r.id));
+				btn.setAttribute('data-room-name', String(r.name || 'Room'));
+				btn.setAttribute('data-room-isFav', isFav ? 'yes' : 'no');
+
+				if (isFav) {
+					favoritesRoot.appendChild(btn);
+				} else if (roomType === 'Room') {
+					roomsRoot.appendChild(btn);
+				} else {
+					zonesRoot.appendChild(btn);
+				}
+			}
+		}
+		
+		function showLights() {
+			$('screenPair').classList.add('hidden');
+			$('screenRooms').classList.add('hidden');
+			$('screenLights').classList.remove('hidden');
+		}
+
+		function showRoomsOnly() {
+			$('screenPair').classList.add('hidden');
+			$('screenRooms').classList.remove('hidden');
+			$('screenLights').classList.add('hidden');
+			$('title').textContent = 'Philips Hue';
+		}
+
+		async function openRoom(room) {
+			currentRoom = room;
+			$('title').textContent = room.name;
+
+			const favBtn = $('btnFavorite');
+			if (favBtn) {
+				if (room.favorite === 'yes') {
+					setText('btnFavorite', 'Remove from favorites')
+					favBtn.classList.add('isFavButton');
+				} else {
+					setText('btnFavorite', 'Add to favorites')
+					favBtn.classList.remove('isFavButton');
+				}
+			}
+			favBtn.setAttribute('data-favorite-room-id', String(room.id));
+			showLights();
+			await loadLights(room.id);
+		}
+
+		async function loadLights(roomId) {
+			if (isLoading) return;
+			isLoading = true;
+
+			setStatus('Loading lights');
+			$('lightsList').innerHTML = '';
+
+			let res = await apiRequest('GET', '/rooms/' + encodeURIComponent(String(roomId)) + '/lights');
+
+			if (!res || !res.ok) {
+				showRoomsOnly();
+				setStatus('Lights load failed');
+				return;
+			}
+
+			const lightData = Array.isArray(res.lights) ? res.lights : [];
+
+			res = await apiRequest('GET', '/scenes');
+			if (!res || !res.ok) {
+				setStatus('Scenes load failed');
+			}
+			isLoading = false;
+
+			const scenes = Array.isArray(res.scenes) ? res.scenes : [];
+			const scenesData = scenes.filter(scene => {
+				return scene.group === roomId;
+			})
+			renderLights(lightData, scenesData);
+			setStatus('');
+		}
+
+		function createRoomAllTile(isOn) {
+			const btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'room';
+			btn.setAttribute('data-room-all', isOn ? 'on' : 'off');
+
+			const state = tr(isOn ? 'All on' : 'All off')
+			const label = tr('This room')
+
+			Promise.all([state, label]).then(labels => {
+				btn.innerHTML = `
+					<div>
+						<div class='itemTitle'>${labels[0]}</div>
+						<div class='itemSub'>${labels[1]}</div>
+					</div>
+					<div class='itemFooter'>
+						<div class='chev'>⏻</div>
+					</div>
+				`;
+			})
+			return btn;
+		}
+
+		async function renderLights(lights, scenes) {
+			const lightsRoot = $('lightsList');
+			lightsRoot.innerHTML = '';
+
+			const scenesRoot = $('scenesList');
+			scenesRoot.innerHTML = '';
+
+			if (currentRoom && currentRoom.id) {
+				lightsRoot.appendChild(createRoomAllTile(true));
+				lightsRoot.appendChild(createRoomAllTile(false));
+			}
+
+			if (lights.length === 0) {
+				setStatus('No lights found');
+				return;
+			}
+
+			for (let i = 0; i < lights.length; i++) {
+				const l = lights[i];
+
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'light ' + (l.on ? 'tileOn' : 'tileOff');
+				btn.setAttribute('data-light-id', String(l.id));
+
+				const name = escapeHtml(l.name);
+				const bri = Number.isFinite(l.bri) ? l.bri : (l.on ? 254 : 1);
+				const pct = briToPct(bri);
+
+				const stateLabel = tr(l.on ? 'on' : 'off');
+				const briLabel = tr('Brightness');
+				const reachLabel = tr((l.reachable === false) ? 'unreachable' : '');
+
+				Promise.all([stateLabel, briLabel, reachLabel]).then((labels) => {
+					btn.innerHTML = `
+					<div>
+						<div class='itemTitle'>${name}</div>
+						<div class='itemSub'>${labels[2]}</div>
+
+						<div class='briWrap'>
+							<div class='briRow'>
+								<div>${labels[1]}</div>
+								<div id='briLabel_${escapeHtml(l.id)}'>${pct}%</div>
+							</div>
+							<input
+								class='briRange'
+								type='range'
+								min='1'
+								max='100'
+								step='1'
+								value='${pct}'
+								data-bri-light-id='${escapeHtml(l.id)}'
+							/>
+						</div>
+					</div>
+
+					<div class='itemFooter'>
+						<div class='badge'>
+							<span class='powerDot'></span>
+							&nbsp;${labels[0]}
+						</div>
+					</div>
+				`;
+
+					lightsRoot.appendChild(btn);
+				})
+			}
+
+			for (let i = 0; i < scenes.length; i++) {
+				const s = scenes[i];
+				const name = escapeHtml(s.name || 'Scene');
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'scene';
+				btn.setAttribute('data-scene-id', String(s.id));
+				btn.setAttribute('data-scene-room-id', String(s.group));
+
+				btn.innerHTML = `
+					<div>
+						<div class='itemTitle'>${name}</div>
+					</div>
+
+					<div class='itemFooter'>
+						<div class='chev'>⏻</div>
+					</div>
+				`;
+				scenesRoot.appendChild(btn);
+			}
+		}
+
+		async function toggleLight(lightId) {
+			if (isLoading) return;
+			isLoading = true;
+
+			setStatus('toggling');
+
+			const res = await apiRequest('POST', '/lights/' + encodeURIComponent(String(lightId)) + '/toggle');
+
+			isLoading = false;
+
+			if (!res || !res.ok) {
+				setStatus('toggling failed');
+				return;
+			}
+
+			if (currentRoom && currentRoom.id) {
+				await loadLights(currentRoom.id);
+			} else {
+				setStatus('');
+			}
+		}
+		
+		async function setLightBrightness(lightId, bri) {
+			if (isLoading) return;
+
+			const res = await apiRequest('POST', '/lights/' + encodeURIComponent(String(lightId)) + '/brightness/' + encodeURIComponent(String(bri)));
+
+			if (!res || !res.ok) {
+				setStatus('brightness failed');
+				return;
+			}
+
+			if (currentRoom && currentRoom.id) await loadLights(currentRoom.id);
+		}
+
+		async function roomAllLights(isOn, noReload = false) {
+			if (!currentRoom || !currentRoom.id) return;
+			if (isLoading) return;
+
+			isLoading = true;
+			setStatus('toggling');
+
+			const res = await apiRequest('POST', '/rooms/' + encodeURIComponent(String(currentRoom.id)) + '/all/' + (isOn ? 'on' : 'off'));
+
+			isLoading = false;
+
+			if (!res || !res.ok) {
+				setStatus('toggling failed');
+				return;
+			}
+
+			if (!noReload) await loadLights(currentRoom.id);
+			setStatus('');
+		}
+
+		async function setRoomBrightness(roomId, bri) {
+			const res = await apiRequest('POST', '/rooms/' + encodeURIComponent(String(roomId)) + '/brightness/' + encodeURIComponent(String(bri)));
+			if (!res || !res.ok) {
+				setStatus('brightness failed');
+			}
+		}
+
+		async function triggerScene(scene) {
+			if (isLoading) return;
+			isLoading = true;
+
+			const res = await apiRequest('POST', '/scenes/' + encodeURIComponent(String(scene.roomId)) + '/' + encodeURIComponent(String(scene.id)));
+
+			isLoading = false;
+
+			if (!res || !res.ok) {
+				setStatus('scene failed');
+				return;
+			}
+
+			await loadLights(scene.roomId);
+			setStatus('');
+		}
+
+		function escapeHtml(s) {
+			return String(s)
+				.replaceAll('&', '&amp;')
+				.replaceAll('<', '&lt;')
+				.replaceAll('>', '&gt;')
+				.replaceAll('"', '&quot;')
+				.replaceAll("'", '&#039;');
+		}
+
+		function wireUi() {
+			$('btnPair').addEventListener('click', async function() {
+				await ensurePairedAndLoad();
+			});
+
+			setText('notPairedText', 'Not Paired');
+			setText('btnPair', 'Pair');
+			setText('favTitle', 'Favorites');
+			setText('roomsTitle', 'Rooms');
+			setText('zonesTitle', 'Zones');
+			setText('lightsTitle', 'Lights');
+			setText('scenesTitle', 'Scenes');
+			setText('btnBack', 'Home');
+		}
+
+		function setText(divId, text) {
+			tr(text).then(msg => {
+				$(divId).innerHTML = msg;
+			})
+		}
+
+		async function toggleFavorite(roomId) {
+			if (isLoading) return;
+
+			isLoading = true;
+			const res = await apiRequest('POST', '/favorite/' + encodeURIComponent(String(roomId)));
+
+			if (!res || !res.ok) {
+				setStatus('favorite failed');
+				isLoading = false;
+				return;
+			}
+			const isFav = res.favorite;
+			const favBtn = $('btnFavorite');
+			if (favBtn) {
+				if (isFav) {
+					tr('Remove from favorites').then(msg => favBtn.textContent = msg)
+					favBtn.classList.add('isFavButton');
+				} else {
+					tr('Add to favorites').then(msg => favBtn.textContent = msg)
+					favBtn.classList.remove('isFavButton');
+				}
+			}
+			await loadRooms();
+			isLoading = false;
+		}
+
+		document.addEventListener('click', function(e) {
+			if (e.target && e.target.closest('.briRange')) {
+				e.stopPropagation();
+				return;
+			}
+
+			if (e.target.closest('#btnBack')) {
+				currentRoom = null;
+				showRoomsOnly();
+				setStatus('');
+				return;
+			}
+
+			const roomToggleBtn = e.target.closest('[data-room-id-toggle]');
+			if (roomToggleBtn) {
+				e.stopPropagation();
+
+				const roomId = roomToggleBtn.getAttribute('data-room-id-toggle');
+
+				currentRoom = {'id': roomId};
+
+				const state = roomToggleBtn.getAttribute('data-room-toggle-state');
+				roomToggleBtn.setAttribute('data-room-toggle-state', state === 'on');
+				roomAllLights(state === 'on', true);
+				loadRooms();
+				return;
+			}
+
+			const favBtn = e.target.closest('[data-favorite-room-id]');
+			if (favBtn) {
+				toggleFavorite(favBtn.getAttribute('data-favorite-room-id'));
+				return;
+			}
+
+			const sceneBtn = e.target.closest('[data-scene-id]');
+			if (sceneBtn) {
+				triggerScene({
+					id: sceneBtn.getAttribute('data-scene-id'),
+					roomId: sceneBtn.getAttribute('data-scene-room-id')
+				});
+				return;
+			}
+
+			const roomBtn = e.target.closest('[data-room-id]');
+			if (roomBtn) {
+				openRoom({
+					id: roomBtn.getAttribute('data-room-id'),
+					name: roomBtn.getAttribute('data-room-name') || 'Room',
+					favorite: roomBtn.getAttribute('data-room-isFav')
+				});
+				return;
+			}
+
+			const lightBtn = e.target.closest('[data-light-id]');
+			if (lightBtn) {
+				toggleLight(lightBtn.getAttribute('data-light-id'));
+				return;
+			}
+
+			const roomAllBtn = e.target.closest('[data-room-all]');
+			if (roomAllBtn) {
+				const state = roomAllBtn.getAttribute('data-room-all');
+				roomAllLights(state === 'on');
+				// noinspection UnnecessaryReturnStatementJS
+				return;
+			}
+		});
+
+		const briTimers = new Map();
+		const roomBriTimers = new Map();
+		document.addEventListener('input', function(e) {
+			const el = e.target;
+			if (!el || !el.matches('.briRange')) return;
+
+			const roomId = el.getAttribute('data-room-bri-id');
+			if (roomId) {
+				const pct = Number(el.value);
+				const bri = pctToBri(pct);
+
+				const label = document.getElementById('roomBriLabel_' + roomId);
+				if (label) label.textContent = String(pct) + '%';
+
+				if (roomBriTimers.has(roomId)) clearTimeout(roomBriTimers.get(roomId));
+				roomBriTimers.set(roomId, setTimeout(function() {
+					setRoomBrightness(roomId, bri);
+				}, 250));
+			} else {
+				const lightId = el.getAttribute('data-bri-light-id');
+				const pct = Number(el.value);
+				const bri = pctToBri(pct);
+
+				const label = document.getElementById('briLabel_' + lightId);
+				if (label) label.textContent = String(pct) + '%';
+
+				if (briTimers.has(lightId)) clearTimeout(briTimers.get(lightId));
+
+				briTimers.set(lightId, setTimeout(function() {
+					setLightBrightness(lightId, bri);
+				}, 250));
+			}
+		});
+
+		function onIcueDataUpdated() {
+			updateStyles();
+			ensurePairedAndLoad();
+		}
+
+		function onIcueInitialized() {
+			languageCode = iCUE.iCUELanguage;
+			wireUi();
+			onIcueDataUpdated();
+		}
+
+		if (iCUE_initialized) {
+			onIcueInitialized();
+		}
+	</script>
+</body>
+</html>
