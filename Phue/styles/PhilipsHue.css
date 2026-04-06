@@ -130,19 +130,27 @@ body {
 
 .itemFooter {
 	display: flex;
-	align-items: flex-end;
 	justify-content: space-between;
 	gap: 10px;
 	margin-top: 10px;
+	width: 100%;
 }
 
 .badge {
+	display: flex;
+	align-items: flex-end;
 	font-size: 15px;
-	padding: 4px 10px;
-	border-radius: 999px;
-	border: 1px solid rgba(255,255,255,0.16);
-	opacity: 0.85;
-	white-space: nowrap;
+}
+
+.lightFavBtnOn {
+	color: var(--accent-color);
+	font-size: 40px;
+	text-align: right;
+}
+
+.lightFavBtnOff {
+	font-size: 40px;
+	text-align: right;
 }
 
 .chev {

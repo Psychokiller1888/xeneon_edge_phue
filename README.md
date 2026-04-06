@@ -3,7 +3,7 @@ Custom Philips Hue widget for Corsair Xeneon Edge
 
 Make sure to install Python on your computer: https://www.python.org/downloads/
 
-Place the files in the "widgets" directory in your iCue install directory, usually under "C:\Program Files\Corsair\Corsair iCUE5 Software\widgets\".
+Place the "Phue" directory in the "widgets" directory of your iCue install directory, usually under "C:\Program Files\Corsair\Corsair iCUE5 Software\widgets\".
 
 Make sure to have admin rights on the iCue widgets directory, as the python service will need to write a json file for some settings. You can choose to place and run the python service at any other location if you do not wish to change the directory permissions, as the script is only a proxy and not used by iCue directly.
 
