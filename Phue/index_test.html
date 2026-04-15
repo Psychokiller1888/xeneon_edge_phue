@@ -182,14 +182,40 @@
 			let currentRoom = null;
 			let isLoading = false;
 
+			// Debug settings
+			let bridgeIp = "192.168.1.139";
+			let proxyPort = 5057;
+			let iCUE = {
+				'iCUELanguage': languageCode
+			}
+			let iCUE_initialized = true;
+
+			let transparency = 100;
+			let tilesTransparency = 100;
+			let tilesLightTransparency = 100;
+			let backgroundColor = "000";
+			let textColor = "FFF";
+			let accentColor = "yellow";
+			let tilesZoneColor = "blue";
+			let tilesRoomColor = "blue";
+			let tilesLightColor = "blue";
+			let tilesSceneColor = "blue";
+
+			async function tr(text) {
+				return text
+			}
+			// END debug settings
+
 			function $(id) {
 				return document.getElementById(id);
 			}
 
 			function setStatus(text) {
-				tr(text).then(msg => {
-					$('status').textContent = String(msg || '');
-				}).catch(_ => $('status').textContent = String(text))
+				tr(text)
+						.then(msg => {
+							$('status').textContent = String(msg || '');
+						})
+						.catch(_ => $('status').textContent = String(text))
 			}
 
 			function showPair() {

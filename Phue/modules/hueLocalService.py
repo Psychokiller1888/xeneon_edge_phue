@@ -14,7 +14,7 @@ statePath = os.path.join(os.path.dirname(__file__), 'hueLocalState.json')
 state: Dict[str, Any] = {
 	'username': None,
     'port': 5057,
-    'favoriteRooms': None,
+    'favoriteRooms': [],
 	'updatedAt': None,
 }
 
@@ -126,6 +126,8 @@ def isRoomFavorite(roomId) -> bool:
 
 def favRoom(roomId):
 	favs = state.setdefault('favoriteRooms', [])
+	if not favs:
+		favs = []
 	favs.append(str(roomId))
 	state['favoriteRooms'] = favs
 	saveState()
