@@ -228,27 +228,35 @@
 				return String(bridgeIp || '').trim();
 			}
 
-			function apiRequest(method, path) {
+			async function apiRequest(method, path) {
 				const ip = getBridgeIp();
 				if (!ip) {
 					return { ok: false, error: 'bridge_ip_missing' };
 				}
 
 				const url = 'http://127.0.0.1:' + proxyPort + path + '?bridgeIp=' + encodeURIComponent(ip);
-				
-				fetch(url, {
-						method,
-						headers: {
-							'Content-Type': 'text/plain;charset=UTF-8',
-						},
-					})
-				.then((response) => response.text())
-				.then((data) => {
-					return JSON.parse(data);
+
+				const res = await fetch(url, {
+					method,
+					headers: {
+						'Content-Type': 'text/plain;charset=UTF-8',
+					},
 				})
-				.catch((err) => {
-					return { ok: false, error: 'parse_error', raw: text };
-				})
+				if (res.status === 200) {
+					try {
+						return await res.json();
+					}
+					catch (e) {
+						return { ok: false, error: 'parse_error', raw: e };
+					}
+				} else {
+					try {
+						return await res.json();
+					}
+					catch (e) {
+						return { ok: false, error: 'parse_error', raw: e };
+					}
+				}
 			}
 
 			async function ensurePairedAndLoad(retryCount = 0) {
@@ -274,12 +282,11 @@
 				const pairedRes = await apiRequest('POST', '/ensurePaired');
 				if (!pairedRes || !pairedRes.ok) {
 					showPair();
-					setStatus('Cannot connect');
-					return;
+					setStatus('Not paired');
+				} else {
+					showRooms();
+					await loadRooms();
 				}
-
-				showRooms();
-				await loadRooms();
 			}
 			
 			function briToPct(bri) {
