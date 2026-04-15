@@ -213,7 +213,7 @@
 			function setStatus(text) {
 				tr(text)
 						.then(msg => {
-							$('status').textContent = String(msg || '');
+							$('status').textContent = String(msg || text);
 						})
 						.catch(_ => $('status').textContent = String(text))
 			}
@@ -696,7 +696,7 @@
 			function setText(divId, text) {
 				tr(text).then(msg => {
 					$(divId).innerHTML = msg;
-				})
+				}).catch(_ => $(divId).textContent = String(text))
 			}
 
 			async function toggleFavorite(roomId) {
