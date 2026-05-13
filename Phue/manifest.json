@@ -1,0 +1,25 @@
+{
+  "author": "Nova",
+  "id": "com.nova.phue",
+  "name": "Phue",
+  "description": "Philips Hue widget",
+  "version": "1.0.0",
+  "preview_icon": "resources/hue.svg",
+  "min_framework_version": "1.0.1",
+  "os": [
+    {
+      "platform": "windows"
+    },
+    {
+      "platform": "mac"
+    }
+  ],
+  "supported_devices": [
+    {
+      "type": "dashboard_lcd",
+      "features": ["sensor-screen"]
+    }
+  ],
+  "interactive": true,
+  "modules": []
+}

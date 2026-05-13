@@ -5,9 +5,6 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>tr('PhilipsHue')</title>
 		<link rel="icon" type="image/svg+xml" href="resources/hue.svg">
-		<meta name="x-icue-framework-version" content="1.0.1">
-		<meta name="x-icue-restrictions" data-restrictions='[{"device": "dashboard_lcd"}]'>
-		<meta name='x-icue-interactive'>
 
 		<meta
 			name='x-icue-property'
@@ -670,7 +667,7 @@
 			function setText(divId, text) {
 				tr(text).then(msg => {
 					$(divId).innerHTML = msg;
-				}).catch(_ => $(divId).textContent = String(text))
+				})
 			}
 
 			async function toggleFavorite(roomId) {
